@@ -9,26 +9,29 @@
 #pragma pack(push, 1)
 struct HTPReturnTrampoline
 {
-    uint8_t     prehook_code[0x65];
+    uint8_t     prehook_code[0x6C];
     uint8_t     saved_opcodes[20];
-    uint8_t     posthook_code[0x5e];
+    uint8_t     posthook_code[0x65];
     HTPHookProc pre_hook_proc;
     uintptr_t   original_function_address;
     HTPHookProc post_hook_proc;
     uintptr_t   save_return_address_proc;
     uintptr_t   restore_return_addres_proc;
     HTPHandle*  handle;
+    uintptr_t   user_data;
 };
 
 struct HTPTrampoline
 {
     char context_init[38]; // Saving registers and initializing the HTPContext
+    char set_user_data[7];
     char call_instruction[6];
     char context_cleanup[31];
     char saved_opcodes[20];
     char jmp_instruction[6];
     uintptr_t hook_address;
     uintptr_t original_function;
+    uintptr_t user_data;
 };
 
 struct HTPRelayPrologue

@@ -212,7 +212,7 @@ bool DecrementRelayCount(HTPHandle* handle, uintptr_t relay_page)
  *  Setup an inline hook at TargetAddress
  */
 // TODO: Deload the function logic if possible?
-bool SetupInlineHook(HTPHandle *handle, uintptr_t target_address, HTPHookProc hook_address)
+bool SetupInlineHook(HTPHandle *handle, uintptr_t target_address, HTPHookProc hook_address, uintptr_t user_data)
 {
     HTPTrampoline* trampoline = NULL;
     HTPHookPrologue* prologue = NULL;
@@ -336,6 +336,7 @@ bool SetupInlineHook(HTPHandle *handle, uintptr_t target_address, HTPHookProc ho
 #endif
     trampoline->original_function = target_address + hook_space;
     trampoline->hook_address = (uintptr_t)hook_address;
+    trampoline->user_data = user_data;
     VirtualProtect((void*)target_address, hook_space, dwOldProt, &dwOldProt);
     FlushInstructionCache(GetCurrentProcess(), (void*)target_address, 0x06);
     hook->hook_address = target_address; // Patched address may differ from address provided in argument
@@ -480,11 +481,13 @@ uintptr_t RestoreReturnAddress(HTPHandle* handle)
  * \param target_address  Address of the function to hook
  * \param prehook_proc    Function to be executed on function entry
  * \param posthook_proc   Function to be executed on function return
+ * \param user_data       User data that can be retrieved in the callback
  */
 bool SetupInlineHook(HTPHandle*  handle,
                      uintptr_t   target_address,
                      HTPHookProc prehook_proc,
-                     HTPHookProc posthook_proc)
+                     HTPHookProc posthook_proc,
+                     uintptr_t user_data)
 {
     HTPReturnTrampoline* trampoline = NULL;
     HTPHookPrologue* prologue = NULL;
@@ -610,6 +613,7 @@ bool SetupInlineHook(HTPHandle*  handle,
     trampoline->restore_return_addres_proc = (uintptr_t)RestoreReturnAddress;
     trampoline->save_return_address_proc = (uintptr_t)SaveReturnAddress;
     trampoline->handle = handle;
+    trampoline->user_data = user_data;
     VirtualProtect((void*)target_address, hook->number_of_opcodes, dwOldProt, &dwOldProt);
     FlushInstructionCache(GetCurrentProcess(), (void*)target_address, 0x06);
     hook->hook_address = target_address; // Patched address may differ from address provided in argument
@@ -622,7 +626,7 @@ bool SetupInlineHook(HTPHandle*  handle,
 /**
  * Wrappers around SetupInlineHook to hook target_proc residing in loaded module_name.
  */
-bool SetupInlineHook(HTPHandle* handle, char* module_name, char* proc_name, HTPHookProc hook_proc)
+bool SetupInlineHook(HTPHandle* handle, char* module_name, char* proc_name, HTPHookProc hook_proc, uintptr_t user_data)
 {
     HMODULE module_handle = NULL;
     uintptr_t target_proc = NULL;
@@ -643,13 +647,13 @@ bool SetupInlineHook(HTPHandle* handle, char* module_name, char* proc_name, HTPH
         DBGMSG("Failed getting function: %s, error: %" PRIu32 "\n", proc_name, GetLastError());
         return false;
     }
-    return SetupInlineHook(handle, target_proc, hook_proc);
+    return SetupInlineHook(handle, target_proc, hook_proc, user_data);
 }
 
 /**
  * Wrappers around SetupInlineHook to hook target_proc residing in loaded module_name.
  */
-bool SetupInlineHook(HTPHandle* handle, char* module_name, char* proc_name, HTPHookProc prehook_proc, HTPHookProc posthook_proc)
+bool SetupInlineHook(HTPHandle* handle, char* module_name, char* proc_name, HTPHookProc prehook_proc, HTPHookProc posthook_proc, uintptr_t user_data)
 {
     HMODULE module_handle = NULL;
     uintptr_t target_proc = NULL;
@@ -674,5 +678,5 @@ bool SetupInlineHook(HTPHandle* handle, char* module_name, char* proc_name, HTPH
         DBGMSG("Failed getting function: %s, error: %" PRIu32 "\n", proc_name, GetLastError());
         return false;
     }
-    return SetupInlineHook(handle, target_proc, prehook_proc, posthook_proc);
+    return SetupInlineHook(handle, target_proc, prehook_proc, posthook_proc, user_data);
 }

@@ -20,12 +20,13 @@ push   r14
 push   r15
 mov    rcx,rsp
 sub    rsp, 28h
+mov    rdx, qword ptr [offset UserDataRet]
 call   qword ptr [offset PreHookAddressProc]
-mov    rdx, qword ptr [rsp+168] ; return address is at offset 0xa8
+mov    rdx, qword ptr [rsp+182] ; return address is at offset 0xB6
 mov    rcx, qword ptr [offset HTPHandle]
 call   qword ptr [offset SaveReturnAddressProc]
 lea    rax, [offset posthooktrampoline]
-mov    qword ptr [rsp+168],rax
+mov    qword ptr [rsp+182],rax
 add    rsp,28h
 pop    r15
 pop    r14
@@ -84,10 +85,11 @@ push   r14
 push   r15
 mov    rcx,rsp
 sub    rsp, 28h
+mov    rdx, qword ptr [offset UserDataRet]
 call   qword ptr [offset PostHookProcAddress]
 mov    rcx, qword ptr [offset HTPHandle]
 call   qword ptr [offset RestoreReturnAddressProc]
-xchg   qword ptr [rsp+168],rax
+xchg   qword ptr [rsp+182],rax
 add    rsp, 28h
 pop    r15
 pop    r14
@@ -118,6 +120,8 @@ RestoreReturnAddressProc:
 dq 4242424242424242h
 HTPHandle:
 dq 4343434343434343h
+UserDataRet:
+dq 4747474747474747h
 
 public generic_ret_trampoline_size 
 generic_ret_trampoline_size dq $-generic_ret_trampoline
@@ -144,6 +148,7 @@ mov     rcx, rsp
 sub     rsp, 28h
 mov     rbx, rsp
 and     rsp, 0FFFFFFFFFFFFFFF0h
+mov     rdx, qword ptr [offset UserData]
 call    qword ptr [offset HookProc]
 mov     rsp, rbx
 add     rsp, 28h
@@ -187,6 +192,7 @@ nop
 jmp     qword ptr [offset OriginalProcAddress]
 HookProc            dq 4142434445464748h
 OriginalProcAddress dq 4142434445464748h
+UserData            dq 4142434445464748h
 
 public generic_trampoline_size
 generic_trampoline_size dq $-generic_trampoline
